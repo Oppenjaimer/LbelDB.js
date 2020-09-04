@@ -293,33 +293,57 @@ function view() {
 /**
  * Return certain column or columns from local memory.
  * @param {(number|number[]|string|string[])} inx - Index or indices or label or labels of the column or columns to return.
+ * @param {boolean} [object=false] - Whether to return the column or columns data as an object or not.
  * @returns {(Array|Array[])} - Column or columns data.
  */
-function returnC(inx) {
+function returnC(inx, object = false) {
     if (arguments.length < 1) throw new TypeError("Missing arguments");
     if (typeOf(inx) == "number") {
+        if (typeOf(object) != "boolean") throw new TypeError(`Invalid data type: ${typeOf(object)}`);
         if (!lbels[inx]) throw new RangeError(`Index ${inx} out of range`);
-        let col = [lbels[inx]];
-        for (let i = 0; i < data.length; i++) col.push(data[i][inx]);
+        let col = object ? {} : [lbels[inx]];
+        if (object) {
+            col[lbels[inx]] = [];
+            for (let i = 0; i < data.length; i++) col[lbels[inx]].push(data[i][inx]);
+        } else {
+            for (let i = 0; i < data.length; i++) col.push(data[i][inx]);
+        }
         return col;
     } else if (typeOf(inx) == "string") {
+        if (typeOf(object) != "boolean") throw new TypeError(`Invalid data type: ${typeOf(object)}`);
         if (!lbels.includes(inx)) throw new Error(`Column not found: ${inx}`);
-        let col = [inx];
-        for (let i = 0; i < data.length; i++) col.push(data[i][lbels.indexOf(inx)]);
+        let col = object ? {} : [inx];
+        if (object) {
+            col[inx] = [];
+            for (let i = 0; i < data.length; i++) col[inx].push(data[i][lbels.indexOf(inx)]);
+        } else {
+            for (let i = 0; i < data.length; i++) col.push(data[i][lbels.indexOf(inx)]);
+        }
         return col;
     } else if (typeOf(inx) == "array") {
-        let columns = [];
+        if (typeOf(object) != "boolean") throw new TypeError(`Invalid data type: ${typeOf(object)}`);
+        let columns = object ? {} : [];
         for (let i of inx) {
             if (typeOf(i) == "number") {
                 if (!lbels[i]) throw new RangeError(`Index ${i} out of range`);
-                let col = [lbels[i]];
-                for (let j = 0; j < data.length; j++) col.push(data[j][i]);
-                columns.push(col);
+                if (object) {
+                    columns[lbels[i]] = [];
+                    for (let j = 0; j < data.length; j++) columns[lbels[i]].push(data[j][i]);
+                } else {
+                    let col = [lbels[i]];
+                    for (let j = 0; j < data.length; j++) col.push(data[j][i]);
+                    columns.push(col);
+                }
             } else if (typeOf(i) == "string") {
-                if (!lbels.includes(i)) throw new Error(`Column not found: ${inx}`);
-                let col = [i];
-                for (let j = 0; j < data.length; j++) col.push(data[j][lbels.indexOf(i)]);
-                columns.push(col);
+                if (!lbels.includes(i)) throw new Error(`Column not found: ${i}`);
+                if (object) {
+                    columns[i] = [];
+                    for (let j = 0; j < data.length; j++) columns[i].push(data[j][lbels.indexOf(i)]);
+                } else {
+                    let col = [i];
+                    for (let j = 0; j < data.length; j++) col.push(data[j][lbels.indexOf(i)]);
+                    columns.push(col);
+                }
             } else {
                 throw new TypeError(`Invalid data type: ${typeOf(i)}`);
             }
