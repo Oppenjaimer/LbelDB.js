@@ -170,7 +170,7 @@ function addR(row) {
 
 /**
  * Delete the column or columns at the specified index or indices from local memory.
- * @param {(number|number[])} inx - Index or indices of the column or columns to delete.
+ * @param {(number|number[]|string|string[])} inx - Index or indices or label or labels of the column or columns to delete.
  */
 function clearC(inx) {
     if (arguments.length < 1) throw new TypeError("Missing arguments");
@@ -178,12 +178,27 @@ function clearC(inx) {
         if (!lbels[inx + 1]) throw new RangeError(`Index ${inx} out of range`);
         lbels.splice(inx + 1, 1);
         for (let i = 0; i < data.length; i++) data[i].splice(inx + 1, 1);
+    } else if (typeOf(inx) == "string") {
+        if (inx == "id") throw new Error("Cannot delete column: id");
+        if (!lbels.includes(inx)) throw new Error(`Column not found: ${inx}`);
+        let index = lbels.indexOf(inx);
+        lbels.splice(index, 1);
+        for (let i = 0; i < data.length; i++) data[i].splice(index, 1);
     } else if (typeOf(inx) == "array") {
         for (let i of inx) {
-            if (typeOf(i) != "number") throw new TypeError(`Invalid data type: ${typeOf(i)}`);
-            if (!lbels[i + 1]) throw new RangeError(`Index ${i} out of range`);
-            lbels.splice(i + 1, 1, "TO-DELETE");
-            for (let j = 0; j < data.length; j++) data[j].splice(i + 1, 1, "TO-DELETE");
+            if (typeOf(i) == "number") {
+                if (!lbels[i + 1]) throw new RangeError(`Index ${i} out of range`);
+                lbels.splice(i + 1, 1, "TO-DELETE");
+                for (let j = 0; j < data.length; j++) data[j].splice(i + 1, 1, "TO-DELETE");
+            } else if (typeOf(i) == "string") {
+                if (i == "id") throw new Error("Cannot delete column: id");
+                if (!lbels.includes(i)) throw new Error(`Column not found: ${i}`);
+                let index = lbels.indexOf(i);
+                lbels.splice(index, 1, "TO-DELETE");
+                for (let j = 0; j < data.length; j++) data[j].splice(index, 1, "TO-DELETE");
+            } else {
+                throw new TypeError(`Invalid data type: ${typeOf(i)}`);
+            }
         }
         lbels = lbels.filter((l) => l != "TO-DELETE");
         for (let i = 0; i < data.length; i++) data[i] = data[i].filter((d) => d != "TO-DELETE");
@@ -277,7 +292,7 @@ function view() {
 
 /**
  * Return certain column or columns from local memory.
- * @param {(number|number[])} inx - Index or indices of the column or columns to return.
+ * @param {(number|number[]|string|string[])} inx - Index or indices or label or labels of the column or columns to return.
  * @returns {(Array|Array[])} - Column or columns data.
  */
 function returnC(inx) {
@@ -287,14 +302,27 @@ function returnC(inx) {
         let col = [lbels[inx]];
         for (let i = 0; i < data.length; i++) col.push(data[i][inx]);
         return col;
+    } else if (typeOf(inx) == "string") {
+        if (!lbels.includes(inx)) throw new Error(`Column not found: ${inx}`);
+        let col = [inx];
+        for (let i = 0; i < data.length; i++) col.push(data[i][lbels.indexOf(inx)]);
+        return col;
     } else if (typeOf(inx) == "array") {
         let columns = [];
         for (let i of inx) {
-            if (typeOf(i) != "number") throw new TypeError(`Invalid data type: ${typeOf(i)}`);
-            if (!lbels[i]) throw new RangeError(`Index ${i} out of range`);
-            let col = [lbels[i]];
-            for (let j = 0; j < data.length; j++) col.push(data[j][i]);
-            columns.push(col);
+            if (typeOf(i) == "number") {
+                if (!lbels[i]) throw new RangeError(`Index ${i} out of range`);
+                let col = [lbels[i]];
+                for (let j = 0; j < data.length; j++) col.push(data[j][i]);
+                columns.push(col);
+            } else if (typeOf(i) == "string") {
+                if (!lbels.includes(i)) throw new Error(`Column not found: ${inx}`);
+                let col = [i];
+                for (let j = 0; j < data.length; j++) col.push(data[j][lbels.indexOf(i)]);
+                columns.push(col);
+            } else {
+                throw new TypeError(`Invalid data type: ${typeOf(i)}`);
+            }
         }
         return columns;
     } else {
@@ -361,22 +389,35 @@ function updateRi(inxR, inxI, item) {
 
 /**
  * Sort out certain column using a natural sort algorithm.
- * @param {number} inx - Index of the column to sort out.
+ * @param {(number|string)} inx - Index or label of the column to sort out.
  * @param {boolean} [reverse=false] - Whether to sort out the column in reverse order or not.
  */
 function sortC(inx, reverse = false) {
     if (arguments.length < 1) throw new TypeError("Missing arguments");
-    if (typeOf(inx) != "number") throw new TypeError(`Invalid data type: ${typeOf(inx)}`);
-    if (typeOf(reverse) != "boolean") throw new TypeError(`Invalid data type: ${typeOf(reverse)}`);
-    if (!lbels[inx + 1]) throw new RangeError(`Index ${inx} out of range`);
+    if (typeOf(inx) == "number") {
+        if (typeOf(reverse) != "boolean") throw new TypeError(`Invalid data type: ${typeOf(reverse)}`);
+        if (!lbels[inx + 1]) throw new RangeError(`Index ${inx} out of range`);
+        let col = [];
+        for (let i = 0; i < data.length; i++) col.push(data[i][inx + 1]);
 
-    let col = [];
-    for (let i = 0; i < data.length; i++) col.push(data[i][inx + 1]);
+        col.sort(naturalCompare);
+        if (reverse) col.reverse();
 
-    col.sort(naturalCompare);
-    if (reverse) col.reverse();
+        for (let i = 0; i < data.length; i++) data[i][inx + 1] = col[i];
+    } else if (typeOf(inx) == "string") {
+        if (typeOf(reverse) != "boolean") throw new TypeError(`Invalid data type: ${typeOf(reverse)}`);
+        if (inx == "id") throw new Error("Cannot sort out column: id");
+        if (!lbels.includes(inx)) throw new Error(`Column not found: ${inx}`);
+        let col = [];
+        for (let i = 0; i < data.length; i++) col.push(data[i][lbels.indexOf(inx)]);
 
-    for (let i = 0; i < data.length; i++) data[i][inx + 1] = col[i];
+        col.sort(naturalCompare);
+        if (reverse) col.reverse();
+
+        for (let i = 0; i < data.length; i++) data[i][lbels.indexOf(inx)] = col[i];
+    } else {
+        throw new TypeError(`Invalid data type: ${typeOf(inx)}`);
+    }
 }
 
 module.exports = {
