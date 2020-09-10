@@ -179,8 +179,8 @@ function clearC(inx) {
         lbels.splice(inx + 1, 1);
         for (let i = 0; i < data.length; i++) data[i].splice(inx + 1, 1);
     } else if (typeOf(inx) == "string") {
-        if (inx == "id") throw new Error("Cannot delete column: id");
-        if (!lbels.includes(inx)) throw new Error(`Column not found: ${inx}`);
+        if (inx == "id") throw new RangeError("Cannot delete column: id");
+        if (!lbels.includes(inx)) throw new RangeError(`Column not found: ${inx}`);
         let index = lbels.indexOf(inx);
         lbels.splice(index, 1);
         for (let i = 0; i < data.length; i++) data[i].splice(index, 1);
@@ -191,8 +191,8 @@ function clearC(inx) {
                 lbels.splice(i + 1, 1, "TO-DELETE");
                 for (let j = 0; j < data.length; j++) data[j].splice(i + 1, 1, "TO-DELETE");
             } else if (typeOf(i) == "string") {
-                if (i == "id") throw new Error("Cannot delete column: id");
-                if (!lbels.includes(i)) throw new Error(`Column not found: ${i}`);
+                if (i == "id") throw new RangeError("Cannot delete column: id");
+                if (!lbels.includes(i)) throw new RangeError(`Column not found: ${i}`);
                 let index = lbels.indexOf(i);
                 lbels.splice(index, 1, "TO-DELETE");
                 for (let j = 0; j < data.length; j++) data[j].splice(index, 1, "TO-DELETE");
@@ -294,7 +294,7 @@ function view() {
  * Return certain column or columns from local memory.
  * @param {(number|number[]|string|string[])} inx - Index or indices or label or labels of the column or columns to return.
  * @param {boolean} [object=false] - Whether to return the column or columns data as an object or not.
- * @returns {(Array|Array[])} - Column or columns data.
+ * @returns {(Array|Array[]|Object)} - Column or columns data.
  */
 function returnC(inx, object = false) {
     if (arguments.length < 1) throw new TypeError("Missing arguments");
@@ -311,7 +311,7 @@ function returnC(inx, object = false) {
         return col;
     } else if (typeOf(inx) == "string") {
         if (typeOf(object) != "boolean") throw new TypeError(`Invalid data type: ${typeOf(object)}`);
-        if (!lbels.includes(inx)) throw new Error(`Column not found: ${inx}`);
+        if (!lbels.includes(inx)) throw new RangeError(`Column not found: ${inx}`);
         let col = object ? {} : [inx];
         if (object) {
             col[inx] = [];
@@ -335,7 +335,7 @@ function returnC(inx, object = false) {
                     columns.push(col);
                 }
             } else if (typeOf(i) == "string") {
-                if (!lbels.includes(i)) throw new Error(`Column not found: ${i}`);
+                if (!lbels.includes(i)) throw new RangeError(`Column not found: ${i}`);
                 if (object) {
                     columns[i] = [];
                     for (let j = 0; j < data.length; j++) columns[i].push(data[j][lbels.indexOf(i)]);
@@ -412,6 +412,59 @@ function updateRi(inxR, inxI, item) {
 }
 
 /**
+ * Update certain column in local memory. Missing array elements will default to an empty string.
+ * @param {(number|string)} inx - Index or label of the column to update.
+ * @param {(Array|Object)} col - New column data.
+ */
+function updateC(inx, col) {
+    if (arguments.length < 2) throw new TypeError("Missing arguments");
+    if (typeOf(inx) == "number") {
+        if (typeOf(col) == "array") {
+            if (typeOf(col[0]) != "string") throw new TypeError(`Invalid data type: ${typeOf(col[0])}`);
+            if (!lbels[inx + 1]) throw new RangeError(`Index ${inx} out of range`);
+            if (data.length < col.length - 1) throw new RangeError("Too many column elements provided");
+            let len = data.length - (col.length - 1);
+            for (let i = 0; i < len; i++) col.push("");
+            lbels.splice(inx + 1, 1, col.shift());
+            for (let i = 0; i < data.length; i++) data[i][inx + 1] = col[i];
+        } else if (typeOf(col) == "object") {
+            if (!lbels[inx + 1]) throw new RangeError(`Index ${inx} out of range`);
+            if (data.length < col[Object.keys(col)[0]].length) throw new RangeError("Too many column elements provided");
+            let len = data.length - col[Object.keys(col)[0]].length;
+            for (let i = 0; i < len; i++) col[Object.keys(col)[0]].push("");
+            lbels.splice(inx + 1, 1, Object.keys(col)[0]);
+            for (let i = 0; i < data.length; i++) data[i][inx + 1] = col[Object.keys(col)[0]][i];
+        } else {
+            throw new TypeError(`Invalid data type: ${typeOf(col)}`);
+        }
+    } else if (typeOf(inx) == "string") {
+        if (typeOf(col) == "array") {
+            if (typeOf(col[0]) != "string") throw new TypeError(`Invalid data type: ${typeOf(col[0])}`);
+            if (inx == "id") throw new RangeError("Cannot update column: id");
+            if (!lbels.includes(inx)) throw new RangeError(`Column not found: ${inx}`);
+            if (data.length < col.length - 1) throw new RangeError("Too many column elements provided");
+            let len = data.length - (col.length - 1);
+            for (let i = 0; i < len; i++) col.push("");
+            let label = col.shift();
+            for (let i = 0; i < data.length; i++) data[i][lbels.indexOf(inx)] = col[i];
+            lbels.splice(lbels.indexOf(inx), 1, label);
+        } else if (typeOf(col) == "object") {
+            if (inx == "id") throw new RangeError("Cannot update column: id");
+            if (!lbels.includes(inx)) throw new RangeError(`Column not found: ${inx}`);
+            if (data.length < col[Object.keys(col)[0]].length) throw new RangeError("Too many column elements provided");
+            let len = data.length - col[Object.keys(col)[0]].length;
+            for (let i = 0; i < len; i++) col[Object.keys(col)[0]].push("");
+            for (let i = 0; i < data.length; i++) data[i][lbels.indexOf(inx)] = col[Object.keys(col)[0]][i];
+            lbels.splice(lbels.indexOf(inx), 1, Object.keys(col)[0]);
+        } else {
+            throw new TypeError(`Invalid data type: ${typeOf(col)}`);
+        }
+    } else {
+        throw new TypeError(`Invalid data type: ${typeOf(inx)}`);
+    }
+}
+
+/**
  * Sort out certain column using a natural sort algorithm.
  * @param {(number|string)} inx - Index or label of the column to sort out.
  * @param {boolean} [reverse=false] - Whether to sort out the column in reverse order or not.
@@ -430,8 +483,8 @@ function sortC(inx, reverse = false) {
         for (let i = 0; i < data.length; i++) data[i][inx + 1] = col[i];
     } else if (typeOf(inx) == "string") {
         if (typeOf(reverse) != "boolean") throw new TypeError(`Invalid data type: ${typeOf(reverse)}`);
-        if (inx == "id") throw new Error("Cannot sort out column: id");
-        if (!lbels.includes(inx)) throw new Error(`Column not found: ${inx}`);
+        if (inx == "id") throw new RangeError("Cannot sort out column: id");
+        if (!lbels.includes(inx)) throw new RangeError(`Column not found: ${inx}`);
         let col = [];
         for (let i = 0; i < data.length; i++) col.push(data[i][lbels.indexOf(inx)]);
 
@@ -459,5 +512,6 @@ module.exports = {
     returnR: returnR,
     updateR: updateR,
     updateRi: updateRi,
+    updateC: updateC,
     sortC: sortC
 };
