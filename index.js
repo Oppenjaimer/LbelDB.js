@@ -91,6 +91,23 @@ function typeOf(operand) {
         .toLowerCase();
 }
 
+/**
+ * Custom parse function for storing values as strings. Not part of the package.
+ * @param {*} operand - The object or primitive to be parsed.
+ * @returns {string} - Parsed operand.
+ */
+function parseCustom(operand) {
+    if (typeOf(operand) == "object") {
+        let result = [];
+        for (let j in operand) result.push(`${j}:${operand[j]}`);
+        return result.join(", ");
+    } else if (typeOf(operand) == "array") {
+        return operand.join(", ");
+    } else {
+        return operand.toString();
+    }
+}
+
 /** Generate IDs for each `data` element. */
 function genId() {
     let id = 10000;
@@ -245,7 +262,7 @@ function store() {
     isInIO = true;
 
     for (let l of lbels) fs.appendFileSync("dbs.lbel", l + "\n");
-    for (let d of data) for (let i of d) fs.appendFileSync("dat.lbel", i.toString() + "\n");
+    for (let d of data) for (let i of d) fs.appendFileSync("dat.lbel", parseCustom(i) + "\n");
 
     clearAll();
 
@@ -282,7 +299,7 @@ function view() {
     for (let d of data) {
         let obj = {};
         lbels.forEach((l, i) => {
-            obj[l] = d[i];
+            obj[l] = parseCustom(d[i]);
         });
         view.push(obj);
     }
