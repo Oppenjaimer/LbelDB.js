@@ -99,7 +99,9 @@ function typeOf(operand) {
 function parseCustom(operand) {
     if (typeOf(operand) == "object") {
         let result = [];
-        for (let j in operand) result.push(`${j}:${operand[j]}`);
+        for (let j in operand) {
+            result.push(`${j}:${operand[j]}`);
+        }
         return result.join(", ");
     } else if (typeOf(operand) == "array") {
         return operand.join(", ");
@@ -129,17 +131,21 @@ function init() {
  */
 function create(label) {
     if (arguments.length < 1) throw new TypeError("Missing arguments");
+    
     if (typeOf(label) == "string") {
         let temp = ["id"];
         temp.push(label);
         lbels = temp;
     } else if (typeOf(label) == "array") {
-        for (l of label) if (typeOf(l) != "string") throw new TypeError(`Invalid data type: ${typeOf(l)}`);
+        for (l of label) {
+            if (typeOf(l) != "string") throw new TypeError(`Invalid data type: ${typeOf(l)}`);
+        }
         label.splice(0, 0, "id");
         lbels = label;
     } else {
         throw new TypeError(`Invalid data type: ${typeOf(label)}`);
     }
+    
     cols = lbels.length;
 }
 
@@ -158,13 +164,16 @@ function addC(col) {
             if (typeOf(c) != "string") throw new TypeError(`Invalid data type: ${typeOf(c)}`);
             lbels.push(c);
         }
+        
         n = col.length;
     } else {
         throw new TypeError(`Invalid data type: ${typeOf(col)}`);
     }
 
     for (let i = 0; i < n; i++) {
-        for (let j = 0; j < data.length; j++) data[j].push("");
+        for (let j = 0; j < data.length; j++) {
+            data[j].push("");
+        }
     }
 
     cols = lbels.length;
@@ -179,7 +188,10 @@ function addR(row) {
     if (typeOf(row) != "array") throw new TypeError(`Invalid data type: ${typeOf(row)}`);
     if (cols - 1 < row.length) throw new RangeError("Too many row elements provided");
 
-    for (let i = 0; i < cols - row.length; i++) row.push("");
+    for (let i = 0; i < cols - row.length; i++) {
+        row.push("");
+    }
+    
     row.splice(0, 0, 10000);
     data.push(row);
     genId();
@@ -191,34 +203,50 @@ function addR(row) {
  */
 function clearC(inx) {
     if (arguments.length < 1) throw new TypeError("Missing arguments");
+    
     if (typeOf(inx) == "number") {
         if (!lbels[inx + 1]) throw new RangeError(`Index ${inx} out of range`);
+        
         lbels.splice(inx + 1, 1);
-        for (let i = 0; i < data.length; i++) data[i].splice(inx + 1, 1);
+        for (let i = 0; i < data.length; i++) {
+            data[i].splice(inx + 1, 1);
+        }
     } else if (typeOf(inx) == "string") {
         if (inx == "id") throw new RangeError("Cannot delete column: id");
         if (!lbels.includes(inx)) throw new RangeError(`Column not found: ${inx}`);
+        
         let index = lbels.indexOf(inx);
         lbels.splice(index, 1);
-        for (let i = 0; i < data.length; i++) data[i].splice(index, 1);
+        for (let i = 0; i < data.length; i++) {
+            data[i].splice(index, 1);
+        }
     } else if (typeOf(inx) == "array") {
         for (let i of inx) {
             if (typeOf(i) == "number") {
                 if (!lbels[i + 1]) throw new RangeError(`Index ${i} out of range`);
+                
                 lbels.splice(i + 1, 1, "TO-DELETE");
-                for (let j = 0; j < data.length; j++) data[j].splice(i + 1, 1, "TO-DELETE");
+                for (let j = 0; j < data.length; j++) {
+                    data[j].splice(i + 1, 1, "TO-DELETE");
+                }
             } else if (typeOf(i) == "string") {
                 if (i == "id") throw new RangeError("Cannot delete column: id");
                 if (!lbels.includes(i)) throw new RangeError(`Column not found: ${i}`);
+                
                 let index = lbels.indexOf(i);
                 lbels.splice(index, 1, "TO-DELETE");
-                for (let j = 0; j < data.length; j++) data[j].splice(index, 1, "TO-DELETE");
+                for (let j = 0; j < data.length; j++) {
+                    data[j].splice(index, 1, "TO-DELETE");
+                }
             } else {
                 throw new TypeError(`Invalid data type: ${typeOf(i)}`);
             }
         }
+        
         lbels = lbels.filter((l) => l != "TO-DELETE");
-        for (let i = 0; i < data.length; i++) data[i] = data[i].filter((d) => d != "TO-DELETE");
+        for (let i = 0; i < data.length; i++) {
+            data[i] = data[i].filter((d) => d != "TO-DELETE");
+        }
     } else {
         throw new TypeError(`Invalid data type: ${typeOf(inx)}`);
     }
@@ -232,15 +260,19 @@ function clearC(inx) {
  */
 function clearR(inx) {
     if (arguments.length < 1) throw new TypeError("Missing arguments");
+    
     if (typeOf(inx) == "number") {
         if (!data[inx]) throw new RangeError(`Index ${inx} out of range`);
+        
         data.splice(inx, 1);
     } else if (typeOf(inx) == "array") {
         for (let i of inx) {
             if (typeOf(i) != "number") throw new TypeError(`Invalid data type: ${typeOf(i)}`);
             if (!data[i]) throw new RangeError(`Index ${i} out of range`);
+            
             data.splice(i, 1, "TO-DELETE");
         }
+        
         data = data.filter((d) => d != "TO-DELETE");
     } else {
         throw new TypeError(`Invalid data type: ${typeOf(inx)}`);
@@ -258,20 +290,30 @@ function clearAll() {
 
 /** Store the data from local memory in the database, clearing it. */
 function store() {
-    while (true) if (!isInIO) break;
+    while (true) {
+        if (!isInIO) break;
+    }
     isInIO = true;
 
-    for (let l of lbels) fs.appendFileSync("dbs.lbel", l + "\n");
-    for (let d of data) for (let i of d) fs.appendFileSync("dat.lbel", parseCustom(i) + "\n");
+    for (let l of lbels) {
+        fs.appendFileSync("dbs.lbel", l + "\n");
+    }
+    
+    for (let d of data) {
+        for (let i of d) {
+            fs.appendFileSync("dat.lbel", parseCustom(i) + "\n");
+        }
+    }
 
     clearAll();
-
     isInIO = false;
 }
 
 /** Retrieve data from the database, storing it in local memory. */
 function retrieve() {
-    while (true) if (!isInIO) break;
+    while (true) {
+        if (!isInIO) break;
+    }
     isInIO = true;
 
     lbels = fs.readFileSync("./dbs.lbel", "utf-8").split("\n").filter(Boolean);
@@ -285,7 +327,10 @@ function retrieve() {
 
     for (let i = 0; i < num; i++) {
         let row = [];
-        for (let j = 0; j < cols; j++) row.push(lines[j]);
+        for (let j = 0; j < cols; j++) {
+            row.push(lines[j]);
+        }
+        
         lines.splice(0, cols);
         data.push(row);
     }
@@ -315,56 +360,83 @@ function view() {
  */
 function returnC(inx, object = false) {
     if (arguments.length < 1) throw new TypeError("Missing arguments");
+    
     if (typeOf(inx) == "number") {
         if (typeOf(object) != "boolean") throw new TypeError(`Invalid data type: ${typeOf(object)}`);
         if (!lbels[inx]) throw new RangeError(`Index ${inx} out of range`);
+        
         let col = object ? {} : [lbels[inx]];
         if (object) {
             col[lbels[inx]] = [];
-            for (let i = 0; i < data.length; i++) col[lbels[inx]].push(data[i][inx]);
+            for (let i = 0; i < data.length; i++) {
+                col[lbels[inx]].push(data[i][inx]);
+            }
         } else {
-            for (let i = 0; i < data.length; i++) col.push(data[i][inx]);
+            for (let i = 0; i < data.length; i++) {
+                col.push(data[i][inx]);
+            }
         }
+        
         return col;
     } else if (typeOf(inx) == "string") {
         if (typeOf(object) != "boolean") throw new TypeError(`Invalid data type: ${typeOf(object)}`);
         if (!lbels.includes(inx)) throw new RangeError(`Column not found: ${inx}`);
+        
         let col = object ? {} : [inx];
         if (object) {
             col[inx] = [];
-            for (let i = 0; i < data.length; i++) col[inx].push(data[i][lbels.indexOf(inx)]);
+            for (let i = 0; i < data.length; i++) {
+                col[inx].push(data[i][lbels.indexOf(inx)]);
+            }
         } else {
-            for (let i = 0; i < data.length; i++) col.push(data[i][lbels.indexOf(inx)]);
+            for (let i = 0; i < data.length; i++) {
+                col.push(data[i][lbels.indexOf(inx)]);
+            }
         }
+        
         return col;
     } else if (typeOf(inx) == "array") {
         if (typeOf(object) != "boolean") throw new TypeError(`Invalid data type: ${typeOf(object)}`);
+        
         let columns = object ? {} : [];
         for (let i of inx) {
             if (typeOf(i) == "number") {
                 if (!lbels[i]) throw new RangeError(`Index ${i} out of range`);
+                
                 if (object) {
                     columns[lbels[i]] = [];
-                    for (let j = 0; j < data.length; j++) columns[lbels[i]].push(data[j][i]);
+                    for (let j = 0; j < data.length; j++) {
+                        columns[lbels[i]].push(data[j][i]);
+                    }
                 } else {
                     let col = [lbels[i]];
-                    for (let j = 0; j < data.length; j++) col.push(data[j][i]);
+                    for (let j = 0; j < data.length; j++) {
+                        col.push(data[j][i]);
+                    }
+                    
                     columns.push(col);
                 }
             } else if (typeOf(i) == "string") {
                 if (!lbels.includes(i)) throw new RangeError(`Column not found: ${i}`);
+                
                 if (object) {
                     columns[i] = [];
-                    for (let j = 0; j < data.length; j++) columns[i].push(data[j][lbels.indexOf(i)]);
+                    for (let j = 0; j < data.length; j++) {
+                        columns[i].push(data[j][lbels.indexOf(i)]);
+                    }
                 } else {
                     let col = [i];
-                    for (let j = 0; j < data.length; j++) col.push(data[j][lbels.indexOf(i)]);
+                    for (let j = 0; j < data.length; j++) {
+                        col.push(data[j][lbels.indexOf(i)]);
+                    }
+                    
                     columns.push(col);
                 }
             } else {
                 throw new TypeError(`Invalid data type: ${typeOf(i)}`);
             }
         }
+        
         return columns;
     } else {
         throw new TypeError(`Invalid data type: ${typeOf(inx)}`);
@@ -378,16 +450,20 @@ function returnC(inx, object = false) {
  */
 function returnR(inx) {
     if (arguments.length < 1) throw new TypeError("Missing arguments");
+    
     if (typeOf(inx) == "number") {
         if (!data[inx]) throw new RangeError(`Index ${inx} out of range`);
+        
         return data[inx];
     } else if (typeOf(inx) == "array") {
         let rows = [];
         for (let i of inx) {
             if (typeOf(i) != "number") throw new TypeError(`Invalid data type: ${typeOf(i)}`);
             if (!data[i]) throw new RangeError(`Index ${i} out of range`);
+            
             rows.push(data[i]);
         }
+        
         return rows;
     } else {
         throw new TypeError(`Invalid data type: ${typeOf(inx)}`);
@@ -406,7 +482,10 @@ function updateR(inx, row) {
     if (!data[inx]) throw new RangeError(`Index ${inx} out of range`);
     if (cols - 1 < row.length) throw new RangeError("Too many row elements provided");
 
-    for (let i = 0; i < cols - row.length; i++) row.push("");
+    for (let i = 0; i < cols - row.length; i++) {
+        row.push("");
+    }
+    
     row.splice(0, 0, 10000);
     data[inx] = row;
     genId();
@@ -435,22 +514,37 @@ function updateRi(inxR, inxI, item) {
  */
 function updateC(inx, col) {
     if (arguments.length < 2) throw new TypeError("Missing arguments");
+    
     if (typeOf(inx) == "number") {
         if (typeOf(col) == "array") {
             if (typeOf(col[0]) != "string") throw new TypeError(`Invalid data type: ${typeOf(col[0])}`);
             if (!lbels[inx + 1]) throw new RangeError(`Index ${inx} out of range`);
             if (data.length < col.length - 1) throw new RangeError("Too many column elements provided");
+            
             let len = data.length - (col.length - 1);
-            for (let i = 0; i < len; i++) col.push("");
+            for (let i = 0; i < len; i++) {
+                col.push("");
+            }
+            
             lbels.splice(inx + 1, 1, col.shift());
-            for (let i = 0; i < data.length; i++) data[i][inx + 1] = col[i];
+            
+            for (let i = 0; i < data.length; i++) {
+                data[i][inx + 1] = col[i];
+            }
         } else if (typeOf(col) == "object") {
             if (!lbels[inx + 1]) throw new RangeError(`Index ${inx} out of range`);
             if (data.length < col[Object.keys(col)[0]].length) throw new RangeError("Too many column elements provided");
+            
             let len = data.length - col[Object.keys(col)[0]].length;
-            for (let i = 0; i < len; i++) col[Object.keys(col)[0]].push("");
+            for (let i = 0; i < len; i++) {
+                col[Object.keys(col)[0]].push("");
+            }
+            
             lbels.splice(inx + 1, 1, Object.keys(col)[0]);
-            for (let i = 0; i < data.length; i++) data[i][inx + 1] = col[Object.keys(col)[0]][i];
+            
+            for (let i = 0; i < data.length; i++) {
+                data[i][inx + 1] = col[Object.keys(col)[0]][i];
+            }
         } else {
             throw new TypeError(`Invalid data type: ${typeOf(col)}`);
         }
@@ -460,18 +554,33 @@ function updateC(inx, col) {
             if (inx == "id") throw new RangeError("Cannot update column: id");
             if (!lbels.includes(inx)) throw new RangeError(`Column not found: ${inx}`);
             if (data.length < col.length - 1) throw new RangeError("Too many column elements provided");
+            
             let len = data.length - (col.length - 1);
-            for (let i = 0; i < len; i++) col.push("");
+            for (let i = 0; i < len; i++) {
+                col.push("");
+            }
+            
             let label = col.shift();
-            for (let i = 0; i < data.length; i++) data[i][lbels.indexOf(inx)] = col[i];
+            
+            for (let i = 0; i < data.length; i++) {
+                data[i][lbels.indexOf(inx)] = col[i];
+            }
+            
             lbels.splice(lbels.indexOf(inx), 1, label);
         } else if (typeOf(col) == "object") {
             if (inx == "id") throw new RangeError("Cannot update column: id");
             if (!lbels.includes(inx)) throw new RangeError(`Column not found: ${inx}`);
             if (data.length < col[Object.keys(col)[0]].length) throw new RangeError("Too many column elements provided");
+            
             let len = data.length - col[Object.keys(col)[0]].length;
-            for (let i = 0; i < len; i++) col[Object.keys(col)[0]].push("");
-            for (let i = 0; i < data.length; i++) data[i][lbels.indexOf(inx)] = col[Object.keys(col)[0]][i];
+            for (let i = 0; i < len; i++) {
+                col[Object.keys(col)[0]].push("");
+            }
+            
+            for (let i = 0; i < data.length; i++) {
+                data[i][lbels.indexOf(inx)] = col[Object.keys(col)[0]][i];
+            }
+            
             lbels.splice(lbels.indexOf(inx), 1, Object.keys(col)[0]);
         } else {
             throw new TypeError(`Invalid data type: ${typeOf(col)}`);
@@ -488,27 +597,38 @@ function updateC(inx, col) {
  */
 function sortC(inx, reverse = false) {
     if (arguments.length < 1) throw new TypeError("Missing arguments");
+    
     if (typeOf(inx) == "number") {
         if (typeOf(reverse) != "boolean") throw new TypeError(`Invalid data type: ${typeOf(reverse)}`);
         if (!lbels[inx + 1]) throw new RangeError(`Index ${inx} out of range`);
+        
         let col = [];
-        for (let i = 0; i < data.length; i++) col.push(data[i][inx + 1]);
+        for (let i = 0; i < data.length; i++) {
+            col.push(data[i][inx + 1]);
+        }
 
         col.sort(naturalCompare);
         if (reverse) col.reverse();
 
-        for (let i = 0; i < data.length; i++) data[i][inx + 1] = col[i];
+        for (let i = 0; i < data.length; i++) {
+            data[i][inx + 1] = col[i];
+        }
     } else if (typeOf(inx) == "string") {
         if (typeOf(reverse) != "boolean") throw new TypeError(`Invalid data type: ${typeOf(reverse)}`);
         if (inx == "id") throw new RangeError("Cannot sort out column: id");
         if (!lbels.includes(inx)) throw new RangeError(`Column not found: ${inx}`);
+        
         let col = [];
-        for (let i = 0; i < data.length; i++) col.push(data[i][lbels.indexOf(inx)]);
+        for (let i = 0; i < data.length; i++) {
+            col.push(data[i][lbels.indexOf(inx)]);
+        }
 
         col.sort(naturalCompare);
         if (reverse) col.reverse();
 
-        for (let i = 0; i < data.length; i++) data[i][lbels.indexOf(inx)] = col[i];
+        for (let i = 0; i < data.length; i++) {
+            data[i][lbels.indexOf(inx)] = col[i];
+        }
     } else {
         throw new TypeError(`Invalid data type: ${typeOf(inx)}`);
     }
